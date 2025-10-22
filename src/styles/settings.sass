@@ -1,0 +1,28 @@
+$font-family: "Nunito Sans", sans-serif
+
+/* Фирменный оранжевый */
+$color-orange: #f7a707
+
+/* Зеленый */
+$color-green: #638258
+
+
+/* Красный */
+$color-red: #c2171f
+
+
+/* Черный фирменный */
+$color-black: #11100f
+
+$color-white: #ffffff
+
+
+@forward 'vuetify/settings' with (
+  $body-font-family: $font-family,
+  $application-background: $color-black,
+  $application-color: $color-white,
+  $button-background: $color-orange,
+  $border-radius-root: 2px,
+  $border-color-root: $color-orange,
+
+)
