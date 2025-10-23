@@ -35,6 +35,7 @@ export const useLeaderBoardStore = defineStore('leaderboard', {
     },
     addEntry(entry: ScoreEntry) {
       this.entries.push(entry)
+      this.persist()
     },
     clearEntries() {
       this.entries = []

@@ -1,10 +1,270 @@
 <template>
-  <h2>TicTacToe</h2>
-  <p>Welcome to the TicTacToe game page.</p>
+  <div>
+    <h2 class="mb-2">TicTacToe</h2>
+
+    <v-row class="mb-4" align="start" no-gutters>
+      <v-col cols="12" sm="6">
+        <v-select
+          v-model="mode"
+          :items="modeOptions"
+          label="Game mode"
+          density="compact"
+          style="max-width: 260px"
+        />
+      </v-col>
+
+      <v-col cols="12" sm="6" class="d-flex justify-end">
+        <v-btn class="ml-3" variant="flat" @click="onStart" :disabled="gameInProgress">Start</v-btn>
+        <v-btn class="ml-2" variant="tonal" @click="resetGame">Reset</v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- Board -->
+    <div class="d-flex justify-center">
+      <div class="board">
+        <div
+          v-for="(cell, idx) in board"
+          :key="idx"
+          class="cell"
+          :class="{ clickable: canPlay(idx), win: winningLine.includes(idx) }"
+          @click="handleCellClick(idx)"
+        >
+          {{ cell }}
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 text-center">
+      <div v-if="!gameInProgress && !hasBoardActivity">Press Start to begin a new game.</div>
+      <div v-else>
+        <strong>Status:</strong>
+        <span v-if="winner">
+          <template v-if="winner === 'Draw'">It's a draw!</template>
+          <template v-else>{{ winner }} wins!</template>
+        </span>
+        <span v-else>{{ currentPlayerName }}'s turn ({{ currentSymbol }})</span>
+      </div>
+    </div>
+    <!-- Name dialog -->
+    <v-dialog v-model="showNameDialog" persistent max-width="420">
+      <v-card>
+        <v-card-title>Enter player name<span v-if="mode === 'PvP'">s</span></v-card-title>
+        <v-card-text>
+          <v-text-field v-model="name1" label="Player 1 name" autofocus />
+          <v-text-field v-if="mode === 'PvP'" v-model="name2" label="Player 2 name" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            color="primary"
+            @click="confirmNames"
+            :disabled="!name1 || (mode === 'PvP' && !name2)"
+          >
+            Continue
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script setup lang="ts">
-// Placeholder page for the TicTacToe game
+import { ref, computed, watch } from 'vue'
+import { useGameStore } from '../stores/game'
+import { useLeaderBoardStore } from '../stores/leaderboard'
+import { GAMETYPE, GameResult, GAMESTATUS } from '../types/game'
+
+// Stores
+const gameStore = useGameStore()
+const leaderboardStore = useLeaderBoardStore()
+
+// Local state
+const modeOptions = ['PvP', 'AI'] as const
+const mode = ref<(typeof modeOptions)[number]>('PvP')
+const board = ref<('' | 'X' | 'O')[]>(Array(9).fill(''))
+const xTurn = ref(true)
+const winner = ref<string | null>(null) // "Draw" or name
+const winningLine = ref<number[]>([])
+const showNameDialog = ref(false)
+const name1 = ref('')
+const name2 = ref('')
+
+const hasBoardActivity = computed(() => board.value.some((c) => c !== ''))
+const gameInProgress = computed(() => gameStore.gameStatus === GAMESTATUS.IN_PROGRESS)
+
+const currentSymbol = computed(() => (xTurn.value ? 'X' : 'O'))
+const player1Name = computed(() => gameStore.playerName || '')
+const player2Name = computed(() =>
+  mode.value === 'AI' ? 'AI' : gameStore.secondaryPlayerName || '',
+)
+const currentPlayerName = computed(() => (xTurn.value ? player1Name.value : player2Name.value))
+
+function canPlay(idx: number) {
+  return !winner.value && board.value[idx] === '' && gameInProgress.value
+}
+
+function onStart() {
+  // Ensure names
+  if (!gameStore.playerName || (mode.value === 'PvP' && !gameStore.secondaryPlayerName)) {
+    name1.value = gameStore.playerName || ''
+    name2.value = gameStore.secondaryPlayerName || ''
+    showNameDialog.value = true
+    return
+  }
+  start()
+}
+
+function confirmNames() {
+  if (!name1.value) return
+  gameStore.setPlayerName(name1.value.trim())
+  if (mode.value === 'PvP') {
+    if (!name2.value) return
+    gameStore.setSecondaryPlayerName(name2.value.trim())
+  } else {
+    gameStore.setSecondaryPlayerName('AI')
+  }
+  showNameDialog.value = false
+  start()
+}
+
+function start() {
+  resetBoardOnly()
+  winner.value = null
+  winningLine.value = []
+  xTurn.value = true
+  gameStore.startGame(GAMETYPE.TIC)
+}
+
+function resetBoardOnly() {
+  board.value = Array(9).fill('')
+}
+
+function resetGame() {
+  resetBoardOnly()
+  winner.value = null
+  winningLine.value = []
+  xTurn.value = true
+}
+
+function handleCellClick(idx: number) {
+  if (!canPlay(idx)) return
+  board.value[idx] = currentSymbol.value
+  checkGameStateAndProceed()
+}
+
+function checkGameStateAndProceed() {
+  const res = calculateWinner(board.value)
+  if (res) {
+    winningLine.value = res.line
+    finish(res.symbol)
+    return
+  }
+  if (board.value.every((c) => c !== '')) {
+    finish(null) // draw
+    return
+  }
+  // Swap turn
+  xTurn.value = !xTurn.value
+
+  // AI move if needed
+  if (!winner.value && mode.value === 'AI' && !xTurn.value) {
+    aiMove()
+  }
+}
+
+function aiMove() {
+  // Simple AI: pick first empty, or random among empties
+  const empties = board.value.map((v, i) => (v === '' ? i : -1)).filter((i) => i !== -1) as number[]
+  if (empties.length === 0) return
+  const choice = empties[Math.floor(Math.random() * empties.length)]
+  board.value[choice] = 'O'
+  checkGameStateAndProceed()
+}
+
+function finish(symbol: 'X' | 'O' | null) {
+  const p1 = player1Name.value || 'Player 1'
+  const p2 = player2Name.value || (mode.value === 'AI' ? 'AI' : 'Player 2')
+
+  if (symbol === 'X') {
+    winner.value = p1
+    recordResult(p1, GameResult.WIN)
+    recordResult(p2, GameResult.LOSS)
+  } else if (symbol === 'O') {
+    winner.value = p2
+    recordResult(p2, GameResult.WIN)
+    recordResult(p1, GameResult.LOSS)
+  } else {
+    winner.value = 'Draw'
+    recordResult(p1, GameResult.DRAW)
+    recordResult(p2, GameResult.DRAW)
+  }
+  gameStore.finishGame()
+}
+
+function recordResult(playerName: string, result: GameResult) {
+  leaderboardStore.addEntry({
+    playerName,
+    score: result === GameResult.WIN ? 1 : 0,
+    gameResult: result,
+    losses: result === GameResult.LOSS ? 1 : 0,
+    runs: 1,
+    gameType: GAMETYPE.TIC,
+    date: new Date().toISOString(),
+  })
+}
+
+function calculateWinner(b: ('' | 'X' | 'O')[]) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ] as const
+  for (const [a, b1, c] of lines) {
+    if (b[a] && b[a] === b[b1] && b[a] === b[c]) {
+      return { symbol: b[a], line: [a, b1, c] }
+    }
+  }
+  return null
+}
+
+// If names are partially missing, prompt when mode changes as well
+watch(mode, (val) => {
+  if (val === 'AI' && !gameStore.playerName) {
+    name1.value = ''
+    name2.value = ''
+    showNameDialog.value = true
+  }
+})
 </script>
 
-<style scoped></style>
+<style scoped lang="sass">
+@use "../styles/settings" as s
+
+.board
+  width: 300px
+  display: grid
+  grid-template-columns: repeat(3, 1fr)
+  gap: 6px
+
+.cell
+  width: 96px
+  height: 96px
+  border: 1px solid s.$color-white
+  display: flex
+  align-items: center
+  justify-content: center
+  font-size: 42px
+  font-weight: 700
+  user-select: none
+
+.cell.clickable
+  cursor: pointer
+
+.cell.win
+  background: rgba(76, 175, 80, 0.2)
+</style>
