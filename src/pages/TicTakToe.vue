@@ -4,7 +4,13 @@
 
     <v-row class="mb-4" align="start" no-gutters>
       <v-col cols="12" sm="6">
-        <v-select :model-value="mode" @update:model-value="onModeAttemptChange" :items="modeOptions" label="Режим" density="compact" />
+        <v-select
+          :model-value="mode"
+          @update:model-value="onModeAttemptChange"
+          :items="modeOptions"
+          label="Режим"
+          density="compact"
+        />
       </v-col>
 
       <v-col cols="12" sm="6" class="d-flex justify-center justify-sm-end">
@@ -104,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useGameStore } from '../stores/game'
 import { useLeaderBoardStore } from '../stores/leaderboard'
 import { GAMETYPE, GameResult, GAMESTATUS } from '../types/game'
@@ -128,7 +134,6 @@ const name2 = ref('')
 // Mode change confirmation state
 const showConfirmDialog = ref(false)
 const pendingMode = ref<(typeof modeOptions)[number] | null>(null)
-const suppressModeWatch = ref(false)
 
 const hasBoardActivity = computed(() => board.value.some((c) => c !== ''))
 const gameInProgress = computed(() => gameStore.gameStatus === GAMESTATUS.IN_PROGRESS)

@@ -12,7 +12,7 @@ const newPlayerName = ref('')
 
 // Build a list of unique player names from the leaderboard
 const nameSuggestions = computed(() => {
-  const names = leaderboardStore.entries.map(e => e.playerName).filter(Boolean)
+  const names = leaderboardStore.entries.map((e) => e.playerName).filter(Boolean)
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b))
 })
 
@@ -47,7 +47,7 @@ function saveName() {
           <v-combobox
             v-model="newPlayerName"
             :items="nameSuggestions"
-            label="Player name"
+            label="Имя игрока"
             autofocus
             clearable
             hide-no-data

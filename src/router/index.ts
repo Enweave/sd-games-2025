@@ -22,15 +22,15 @@ const routes: RouteRecordRaw[] = [
     name: GAMETYPE.QUIZ,
     component: () => import('../pages/QuizGame.vue'),
   },
-  {
-    path: '/motion',
-    name: GAMETYPE.MOTION,
-    component: () => import('../pages/MotionGame.vue'),
-  },
+  // {
+  //   path: '/motion',
+  //   name: GAMETYPE.MOTION,
+  //   component: () => import('../pages/MotionGame.vue'),
+  // },
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/sd-games-2025/'),
   routes,
 })
 
