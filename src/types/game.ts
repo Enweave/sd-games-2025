@@ -36,3 +36,15 @@ export interface GameState {
   playerName: string | null
   secondaryPlayerName: string | null
 }
+
+export interface QuizGroup {
+  groupName: string
+  questions: QuizQuestion[]
+  questionIndex: number
+}
+
+export interface QuizQuestion {
+  question: string
+  options: string[]
+  correctAnswerIndex: number
+}

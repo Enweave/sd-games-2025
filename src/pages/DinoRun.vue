@@ -1,10 +1,12 @@
 <template>
-  <h2>DinoRun</h2>
-  <p>Welcome to the DinoRun game page.</p>
+  <header class="header">
+    <h2 class="title">{{ GAMETYPE.DINO }}</h2>
+    <div class="spacer"></div>
+  </header>
 </template>
 
 <script setup lang="ts">
-// Placeholder page for the DinoRun game
+import { GAMETYPE } from '../types/game'
 </script>
 
-<style scoped></style>
+<style scoped lang="sass"></style>
