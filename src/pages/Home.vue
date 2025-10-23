@@ -15,10 +15,11 @@ onMounted(() => {
 // Table headers
 const headers = [
   { title: 'Player', key: 'playerName', align: 'start' },
+  { title: 'Game Type', key: 'gameType', align: 'start' },
   { title: 'Games Played', key: 'gamesPlayed', align: 'end' },
   { title: 'Wins', key: 'wins', align: 'end' },
   { title: 'Losses', key: 'losses', align: 'end' },
-]
+] as const
 
 // Game type options for the filter
 const gameTypeOptions = ['ALL', ...Object.values(GAMETYPE)]
@@ -30,22 +31,25 @@ const aggregatedData = computed(() => {
     (entry) => selectedGameType.value === 'ALL' || entry.gameType === selectedGameType.value,
   )
 
-  // Aggregate data by player
+  // Aggregate data by player and game type
   const playerStats: Record<
     string,
-    { playerName: string; gamesPlayed: number; wins: number; losses: number }
+    { key: string; playerName: string; gameType: GAMETYPE; gamesPlayed: number; wins: number; losses: number }
   > = {}
 
   for (const entry of filteredEntries) {
-    if (!playerStats[entry.playerName]) {
-      playerStats[entry.playerName] = {
+    const key = `${entry.playerName}|${entry.gameType}`
+    if (!playerStats[key]) {
+      playerStats[key] = {
+        key,
         playerName: entry.playerName,
+        gameType: entry.gameType,
         gamesPlayed: 0,
         wins: 0,
         losses: 0,
       }
     }
-    const stats = playerStats[entry.playerName]
+    const stats = playerStats[key]
     stats.gamesPlayed++
     if (entry.gameResult === GameResult.WIN) {
       stats.wins++
@@ -73,8 +77,9 @@ const aggregatedData = computed(() => {
   <v-data-table
     :headers="headers"
     :items="aggregatedData"
-    item-key="playerName"
-    class="elevation-1"
+    item-key="key"
+    class="elevation-1 bg-grey-darken-4 text-white"
+    theme="dark"
   >
   </v-data-table>
 </template>

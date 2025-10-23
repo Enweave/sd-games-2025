@@ -4,23 +4,17 @@
 
     <v-row class="mb-4" align="start" no-gutters>
       <v-col cols="12" sm="6">
-        <v-select
-          v-model="mode"
-          :items="modeOptions"
-          label="Game mode"
-          density="compact"
-          style="max-width: 260px"
-        />
+        <v-select v-model="mode" :items="modeOptions" label="Game mode" density="compact" />
       </v-col>
 
-      <v-col cols="12" sm="6" class="d-flex justify-end">
+      <v-col cols="12" sm="6" class="d-flex justify-center justify-sm-end">
         <v-btn class="ml-3" variant="flat" @click="onStart" :disabled="gameInProgress">Start</v-btn>
         <v-btn class="ml-2" variant="tonal" @click="resetGame">Reset</v-btn>
       </v-col>
     </v-row>
 
     <!-- Board -->
-    <div class="d-flex justify-center">
+    <div class="d-flex justify-center mt-12">
       <div class="board">
         <div
           v-for="(cell, idx) in board"
@@ -37,7 +31,6 @@
     <div class="mt-6 text-center">
       <div v-if="!gameInProgress && !hasBoardActivity">Press Start to begin a new game.</div>
       <div v-else>
-        <strong>Status:</strong>
         <span v-if="winner">
           <template v-if="winner === 'Draw'">It's a draw!</template>
           <template v-else>{{ winner }} wins!</template>
@@ -56,12 +49,28 @@
         <v-card-actions>
           <v-spacer />
           <v-btn
-            color="primary"
+            variant="flat"
             @click="confirmNames"
             :disabled="!name1 || (mode === 'PvP' && !name2)"
           >
             Continue
           </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Result dialog -->
+    <v-dialog v-model="showResultDialog" max-width="420">
+      <v-card>
+        <v-card-title>Game finished!</v-card-title>
+        <v-card-text>
+          <div class="text-subtitle-1" v-if="winner === 'Draw'">It's a draw!</div>
+          <div class="text-subtitle-1" v-else>{{ winner }} wins!</div>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="outlined" @click="showResultDialog = false">Close</v-btn>
+          <v-btn variant="flat" @click="onPlayAgain">Play again</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -86,6 +95,7 @@ const xTurn = ref(true)
 const winner = ref<string | null>(null) // "Draw" or name
 const winningLine = ref<number[]>([])
 const showNameDialog = ref(false)
+const showResultDialog = ref(false)
 const name1 = ref('')
 const name2 = ref('')
 
@@ -132,6 +142,7 @@ function start() {
   winner.value = null
   winningLine.value = []
   xTurn.value = true
+  showResultDialog.value = false
   gameStore.startGame(GAMETYPE.TIC)
 }
 
@@ -144,6 +155,7 @@ function resetGame() {
   winner.value = null
   winningLine.value = []
   xTurn.value = true
+  showResultDialog.value = false
 }
 
 function handleCellClick(idx: number) {
@@ -199,6 +211,7 @@ function finish(symbol: 'X' | 'O' | null) {
     recordResult(p2, GameResult.DRAW)
   }
   gameStore.finishGame()
+  showResultDialog.value = true
 }
 
 function recordResult(playerName: string, result: GameResult) {
@@ -211,6 +224,11 @@ function recordResult(playerName: string, result: GameResult) {
     gameType: GAMETYPE.TIC,
     date: new Date().toISOString(),
   })
+}
+
+function onPlayAgain() {
+  showResultDialog.value = false
+  start()
 }
 
 function calculateWinner(b: ('' | 'X' | 'O')[]) {
@@ -234,10 +252,26 @@ function calculateWinner(b: ('' | 'X' | 'O')[]) {
 
 // If names are partially missing, prompt when mode changes as well
 watch(mode, (val) => {
-  if (val === 'AI' && !gameStore.playerName) {
-    name1.value = ''
-    name2.value = ''
-    showNameDialog.value = true
+  if (val === 'AI') {
+    // Ensure secondary name is AI in this mode
+    gameStore.setSecondaryPlayerName('AI')
+    // If main player name is missing, ask for it
+    if (!gameStore.playerName) {
+      name1.value = ''
+      name2.value = ''
+      showNameDialog.value = true
+    }
+  } else if (val === 'PvP') {
+    // If switching to PvP, ask for second player's name if it's missing or still 'AI'
+    const needSecond =
+      !gameStore.secondaryPlayerName ||
+      gameStore.secondaryPlayerName.trim() === '' ||
+      gameStore.secondaryPlayerName === 'AI'
+    if (!gameStore.playerName || needSecond) {
+      name1.value = gameStore.playerName || ''
+      name2.value = needSecond ? '' : gameStore.secondaryPlayerName || ''
+      showNameDialog.value = true
+    }
   }
 })
 </script>
