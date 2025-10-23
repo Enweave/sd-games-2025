@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import { GAMETYPE } from '../types/game'
 
 const routes: RouteRecordRaw[] = [
@@ -30,7 +30,7 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory('/sd-games-2025/'),
+  history: createWebHashHistory(),
   routes,
 })
 
