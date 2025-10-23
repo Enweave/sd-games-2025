@@ -1,17 +1,29 @@
 <template>
   <div>
-    <h2 class="mb-2">TicTacToe</h2>
+    <h2 class="mb-2">{{ GAMETYPE.TIC }}</h2>
 
     <v-row class="mb-4" align="start" no-gutters>
       <v-col cols="12" sm="6">
-        <v-select v-model="mode" :items="modeOptions" label="Game mode" density="compact" />
+        <v-select :model-value="mode" @update:model-value="onModeAttemptChange" :items="modeOptions" label="Режим" density="compact" />
       </v-col>
 
       <v-col cols="12" sm="6" class="d-flex justify-center justify-sm-end">
-        <v-btn class="ml-3" variant="flat" @click="onStart" :disabled="gameInProgress">Start</v-btn>
-        <v-btn class="ml-2" variant="tonal" @click="resetGame">Reset</v-btn>
+        <v-btn class="ml-3" variant="flat" @click="onStart" :disabled="gameInProgress"
+          >Начать</v-btn
+        >
+        <v-btn class="ml-2" variant="tonal" @click="resetGame">Сброс</v-btn>
       </v-col>
     </v-row>
+
+    <div v-if="gameInProgress" class="mt-6 text-center">
+      <div class="player-names">
+        <span class="player text-amber-accent-1">{{ player1Name || 'Player 1' }} (X)</span>
+        <span class="mx-2">против</span>
+        <span class="player text-amber-accent-1"
+          >{{ player2Name || (mode === 'AI' ? 'AI' : 'Player 2') }} (O)</span
+        >
+      </div>
+    </div>
 
     <!-- Board -->
     <div class="d-flex justify-center mt-12">
@@ -29,31 +41,32 @@
     </div>
 
     <div class="mt-6 text-center">
-      <div v-if="!gameInProgress && !hasBoardActivity">Press Start to begin a new game.</div>
+      <div v-if="!gameInProgress && !hasBoardActivity">Нажмите "Начать"</div>
       <div v-else>
         <span v-if="winner">
-          <template v-if="winner === 'Draw'">It's a draw!</template>
-          <template v-else>{{ winner }} wins!</template>
+          <template v-if="winner === 'Draw'">Ничья!</template>
+          <template v-else>{{ winner }} побеждает!</template>
         </span>
-        <span v-else>{{ currentPlayerName }}'s turn ({{ currentSymbol }})</span>
+        <span v-else>Ходит {{ currentPlayerName }} ({{ currentSymbol }})</span>
       </div>
     </div>
     <!-- Name dialog -->
-    <v-dialog v-model="showNameDialog" persistent max-width="420">
+    <v-dialog v-model="showNameDialog" max-width="420">
       <v-card>
-        <v-card-title>Enter player name<span v-if="mode === 'PvP'">s</span></v-card-title>
+        <v-card-title>Введите имя<span v-if="mode === 'PvP'"></span></v-card-title>
         <v-card-text>
-          <v-text-field v-model="name1" label="Player 1 name" autofocus />
-          <v-text-field v-if="mode === 'PvP'" v-model="name2" label="Player 2 name" />
+          <v-text-field v-model="name1" label="Игрок 1" autofocus />
+          <v-text-field v-if="mode === 'PvP'" v-model="name2" label="Игрок 2" />
         </v-card-text>
         <v-card-actions>
+          <v-btn variant="outlined" @click="cancelNames">Отмена</v-btn>
           <v-spacer />
           <v-btn
             variant="flat"
             @click="confirmNames"
             :disabled="!name1 || (mode === 'PvP' && !name2)"
           >
-            Continue
+            Продолжить
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -62,15 +75,28 @@
     <!-- Result dialog -->
     <v-dialog v-model="showResultDialog" max-width="420">
       <v-card>
-        <v-card-title>Game finished!</v-card-title>
+        <v-card-title>Игра окончена!</v-card-title>
         <v-card-text>
-          <div class="text-subtitle-1" v-if="winner === 'Draw'">It's a draw!</div>
-          <div class="text-subtitle-1" v-else>{{ winner }} wins!</div>
+          <div class="text-subtitle-1" v-if="winner === 'Draw'">Ничья!</div>
+          <div class="text-subtitle-1" v-else>{{ winner }} побеждает!</div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="outlined" @click="showResultDialog = false">Close</v-btn>
-          <v-btn variant="flat" @click="onPlayAgain">Play again</v-btn>
+          <v-btn variant="outlined" @click="showResultDialog = false">Закрыть</v-btn>
+          <v-btn variant="flat" @click="onPlayAgain">Играть снова</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Mode change confirmation dialog -->
+    <v-dialog v-model="showConfirmDialog" max-width="420">
+      <v-card>
+        <v-card-title>Сменить режим?</v-card-title>
+        <v-card-text>Игра идет. Изменить режим и сбросить текущую игру?</v-card-text>
+        <v-card-actions>
+          <v-btn variant="outlined" @click="onCancelModeChange">Нет</v-btn>
+          <v-spacer />
+          <v-btn variant="flat" @click="onConfirmModeChange">Да</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -98,6 +124,11 @@ const showNameDialog = ref(false)
 const showResultDialog = ref(false)
 const name1 = ref('')
 const name2 = ref('')
+
+// Mode change confirmation state
+const showConfirmDialog = ref(false)
+const pendingMode = ref<(typeof modeOptions)[number] | null>(null)
+const suppressModeWatch = ref(false)
 
 const hasBoardActivity = computed(() => board.value.some((c) => c !== ''))
 const gameInProgress = computed(() => gameStore.gameStatus === GAMESTATUS.IN_PROGRESS)
@@ -137,6 +168,14 @@ function confirmNames() {
   start()
 }
 
+function cancelNames() {
+  // Just close the dialog and keep current names unchanged
+  showNameDialog.value = false
+  // Optionally clear inputs so next open doesn't auto-fill stale values
+  name1.value = gameStore.playerName || ''
+  name2.value = mode.value === 'PvP' ? gameStore.secondaryPlayerName || '' : ''
+}
+
 function start() {
   resetBoardOnly()
   winner.value = null
@@ -156,6 +195,10 @@ function resetGame() {
   winningLine.value = []
   xTurn.value = true
   showResultDialog.value = false
+  // Ensure the store reflects that no game is currently in progress
+  gameStore.currentGame = null
+  gameStore.gameStatus = GAMESTATUS.NOT_STARTED
+  if (typeof gameStore.persist === 'function') gameStore.persist()
 }
 
 function handleCellClick(idx: number) {
@@ -191,6 +234,22 @@ function aiMove() {
   const choice = empties[Math.floor(Math.random() * empties.length)]
   board.value[choice] = 'O'
   checkGameStateAndProceed()
+}
+
+function onConfirmModeChange() {
+  showConfirmDialog.value = false
+  if (!pendingMode.value) return
+  const target = pendingMode.value
+  pendingMode.value = null
+  // Reset current game, then apply new mode and its side effects
+  resetGame()
+  mode.value = target
+  applyModeSideEffects(target)
+}
+
+function onCancelModeChange() {
+  showConfirmDialog.value = false
+  pendingMode.value = null
 }
 
 function finish(symbol: 'X' | 'O' | null) {
@@ -250,8 +309,7 @@ function calculateWinner(b: ('' | 'X' | 'O')[]) {
   return null
 }
 
-// If names are partially missing, prompt when mode changes as well
-watch(mode, (val) => {
+function applyModeSideEffects(val: (typeof modeOptions)[number]) {
   if (val === 'AI') {
     // Ensure secondary name is AI in this mode
     gameStore.setSecondaryPlayerName('AI')
@@ -273,7 +331,20 @@ watch(mode, (val) => {
       showNameDialog.value = true
     }
   }
-})
+}
+
+// Handle mode selection attempts via the select's update event instead of watcher to avoid double-click issues
+function onModeAttemptChange(val: (typeof modeOptions)[number]) {
+  // If a game is in progress, ask for confirmation and keep current mode until user confirms
+  if (gameInProgress.value) {
+    pendingMode.value = val
+    showConfirmDialog.value = true
+    return
+  }
+  // No game in progress: apply immediately
+  mode.value = val
+  applyModeSideEffects(val)
+}
 </script>
 
 <style scoped lang="sass">

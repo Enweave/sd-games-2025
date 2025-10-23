@@ -4,10 +4,12 @@
       <v-container>
         <div class="d-flex align-center justify-space-between">
           <!-- Home icon as link -->
-          <v-btn icon :to="{ path: '/' }" variant="text" class="mr-2" :exact="true">
-            <v-icon icon="mdi-home" />
-          </v-btn>
-
+          <div class="d-flex align-center">
+            <v-btn icon :to="{ path: '/' }" variant="text" class="mr-2" :exact="true">
+              <v-icon icon="mdi-home" />
+            </v-btn>
+            <PlayerName></PlayerName>
+          </div>
           <!-- Desktop links -->
           <v-toolbar-items class="hidden-sm-and-down">
             <v-btn
@@ -67,12 +69,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import PlayerName from './components/PlayerName.vue'
+import { GAMETYPE } from './types/game'
 
 const drawer = ref(false)
 
 // Navigation links (excluding Home which is the icon)
 const links = [
-  { to: '/tic', label: 'TicTacToe' },
+  { to: '/tic', label: GAMETYPE.TIC },
   // { to: '/dino', label: 'DinoRun' },
   // { to: '/quiz', label: 'QuizGame' },
   // { to: '/motion', label: 'MotionGame' },

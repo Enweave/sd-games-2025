@@ -1,5 +1,5 @@
 export enum GAMETYPE {
-  TIC = 'TicTakToe',
+  TIC = 'Крестики-СДворики',
   DINO = 'DinoRun',
   QUIZ = 'QuizGame',
   MOTION = 'MotionGame',
