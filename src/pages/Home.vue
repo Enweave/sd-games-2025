@@ -34,7 +34,14 @@ const aggregatedData = computed(() => {
   // Aggregate data by player and game type
   const playerStats: Record<
     string,
-    { key: string; playerName: string; gameType: GAMETYPE; gamesPlayed: number; wins: number; losses: number }
+    {
+      key: string
+      playerName: string
+      gameType: GAMETYPE
+      gamesPlayed: number
+      wins: number
+      losses: number
+    }
   > = {}
 
   for (const entry of filteredEntries) {
@@ -60,6 +67,13 @@ const aggregatedData = computed(() => {
 
   return Object.values(playerStats)
 })
+
+const showClearDialog = ref(false)
+const hasEntries = computed(() => leaderboardStore.entries.length > 0)
+const confirmClear = () => {
+  leaderboardStore.clearEntries()
+  showClearDialog.value = false
+}
 </script>
 
 <template>
@@ -82,6 +96,26 @@ const aggregatedData = computed(() => {
     theme="dark"
   >
   </v-data-table>
+
+  <div class="mt-4">
+    <v-btn v-if="hasEntries" color="red" variant="flat" @click="showClearDialog = true">
+      Clear leaderboard
+    </v-btn>
+
+    <v-dialog v-model="showClearDialog" max-width="420">
+      <v-card>
+        <v-card-title class="text-h6">Clear leaderboard?</v-card-title>
+        <v-card-text>
+          This will remove all saved scores from your device. This action cannot be undone.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="showClearDialog = false">Cancel</v-btn>
+          <v-btn color="red" variant="flat" @click="confirmClear">Clear</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <style scoped></style>

@@ -1,8 +1,7 @@
 export enum GAMETYPE {
   TIC = 'Крестики-СДворики',
-  DINO = 'DinoRun',
-  QUIZ = 'QuizGame',
-  MOTION = 'MotionGame',
+  DINO = 'Катим впрод!',
+  QUIZ = 'Квиз',
 }
 
 export const enum GAMESTATUS {
