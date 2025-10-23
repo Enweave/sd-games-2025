@@ -1,0 +1,1 @@
+import{aj as s,ao as t,n as e,aa as n,aA as o,ap as r,am as c}from"./index-BtR_fZYN.js";const l={class:"header"},i={class:"title"},m=s({__name:"DinoRun",setup(p){return(_,a)=>(r(),t("header",l,[e("h2",i,n(o(c).DINO),1),a[0]||(a[0]=e("div",{class:"spacer"},null,-1))]))}});export{m as default};
