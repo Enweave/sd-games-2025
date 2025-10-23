@@ -5,9 +5,9 @@
         <div class="d-flex align-center justify-space-between">
           <!-- Home icon as link -->
           <div class="d-flex align-center">
-            <v-btn icon :to="{ path: '/' }" variant="text" class="mr-2" :exact="true">
-              <v-icon icon="mdi-home" />
-            </v-btn>
+            <RouterLink icon :to="{ path: '/' }" class="mr-2" :exact="true">
+              <img :src="CustomIcon" alt="Home" />
+            </RouterLink>
             <PlayerName></PlayerName>
           </div>
           <!-- Desktop links -->
@@ -71,6 +71,7 @@
 import { ref } from 'vue'
 import PlayerName from './components/PlayerName.vue'
 import { GAMETYPE } from './types/game'
+import CustomIcon from './assets/favicon.svg'
 
 const drawer = ref(false)
 
