@@ -3,7 +3,9 @@
     <v-toolbar density="compact" class="mb-4" color="transparent" flat>
       <v-toolbar-title class="title">{{ GAMETYPE.QUIZ }}</v-toolbar-title>
       <v-spacer />
-      <div v-if="quizGroup && !isFinished" class="progress">Вопрос {{ currentNumber }} / {{ totalQuestions }}</div>
+      <div v-if="quizGroup && !isFinished" class="progress">
+        Вопрос {{ currentNumber }} / {{ totalQuestions }}
+      </div>
     </v-toolbar>
 
     <section v-if="!started" class="start">
@@ -51,7 +53,7 @@
                 "
               />
             </template>
-            <v-list-item-title>{{ opt }}</v-list-item-title>
+            <v-list-item-media>{{ opt }}</v-list-item-media>
           </v-list-item>
         </v-list>
 
