@@ -73,9 +73,9 @@ const drawer = ref(false)
 // Navigation links (excluding Home which is the icon)
 const links = [
   { to: '/tic', label: 'TicTacToe' },
-  { to: '/dino', label: 'DinoRun' },
-  { to: '/quiz', label: 'QuizGame' },
-  { to: '/motion', label: 'MotionGame' },
+  // { to: '/dino', label: 'DinoRun' },
+  // { to: '/quiz', label: 'QuizGame' },
+  // { to: '/motion', label: 'MotionGame' },
 ]
 </script>
 
